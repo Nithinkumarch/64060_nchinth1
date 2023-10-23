@@ -1,133 +1,300 @@
 ---
-title: "Assignment 3"
-author: "Kalashi Kunal"
-date: "`r Sys.Date()`"
+title: Module - 4 Assignment - 2
+author: Chinthakindi Nithin Kumar
+date: "2023-10-21"
 output:
   pdf_document: default
   html_document: default
+  word_document: default
 ---
-  
-```{r setup}
-
-UniversalBank <- read.csv("/Users/nithinkumarch/Downloads/UniversalBank.csv")
-summary(UniversalBank)
-library(caret)
-library(ISLR)
-library(e1071)
-library(dplyr)
+```{r}
 library(class)
-library(reshape2)
-library(ggplot2)
-library(gmodels)
-library(lattice)
+library(caret)
+library(e1071)
 ```
 
-```{r}
-#converting variables
-UniversalBank$Personal.Loan <- factor(UniversalBank$Personal.Loan)
-UniversalBank$Online <- factor(UniversalBank$Online)
-UniversalBank$CreditCard <- factor(UniversalBank$CreditCard)
-df= UniversalBank
-```
 
-```{r}
-#Question 1
-
-#Create a pivot table for the training data with Online as a column variable, CC as a row variable, and Loan as a secondary row variable.
-
-set.seed(64060)
-Train_index <- createDataPartition(df$Personal.Loan, p = 0.6, list = FALSE)
-train.df = df[Train_index,]
-validation.df = df[-Train_index,]
-
-mytable <- xtabs(~ CreditCard + Online + Personal.Loan , data = train.df)
-ftable(mytable)
-
+```{r }
+universal.df <- read.csv("UniversalBank.csv")
+dim(universal.df)
+t(t(names(universal.df)))
 ```
 ```{r}
-#Question 2
-
-#Consider the task of classifying a customer who owns a bank credit card and is actively using online banking services. Looking at the pivot table, what is the probability that this customer will accept the loan offer? [This is the probability of loan acceptance (Loan = 1) conditional on having a bank credit card (CC = 1) and being an active user of online banking services (Online = 1)].
-
-
-probability = 59/(59+479)
-probability
-
+universal.df <- universal.df[,-c(1,5)]
 ```
-```{r}
-#Question 3
 
-#Create two separate pivot tables for the training data. One will have Loan (rows) as a function of Online (columns) and the other will have Loan (rows) as a function of CC.
-
-table(Personal.Loan = train.df$Personal.Loan, Online = train.df$Online)
-
-table(Personal.Loan = train.df$Personal.Loan, CreditCard = train.df$CreditCard)
-table(Personal.Loan = train.df$Personal.Loan)
-```
+60% for training and 40% for validation of the data. This can be done in a variety of ways. We'll examine 2 different approaches. Let's convert categorical variables into dummy variables before splitting.
 
 ```{r}
-#Question 4
 
-#Compute the following quantities [P(A | B) means “the probability of A given B”]: 
+universal.df$Education <- as.factor(universal.df$Education)
 
-#i. P(CC = 1 | Loan = 1) (the proportion of credit card holders among the loan 
-#acceptors) 
-Probablity1 <- 93/(93+195)
-Probablity1
 
-#ii. P(Online = 1 | Loan = 1)  
-Probablity2 <- 179/(179+109)
-Probablity2
 
-#iii. P(Loan = 1) (the proportion of loan acceptors)  
-Probablity3 <- 288/(288+2712)
-Probablity3
-#iv. P(CC = 1 | Loan = 0)  
-Probablity4 <- 788/(788+1924)
-Probablity4
+groups <- dummyVars(~., data = universal.df)
+universal_m.df <- as.data.frame(predict(groups,universal.df))
 
-#v. P(Online = 1 | Loan = 0) 
-Probablity5 <- 1631/(1631+1081)
-Probablity5
 
-#vi. P(Loan = 0) 
-Probablity6 <- 2712/(2712+288)
-Probablity6
+set.seed(1)  
+train.index <- sample(row.names(universal_m.df), 0.6*dim(universal_m.df)[1])
+valid.index <- setdiff(row.names(universal_m.df), train.index)  
+train.df <- universal_m.df[train.index,]
+valid.df <- universal_m.df[valid.index,]
+t(t(names(train.df)))
+
+#2nd approach
+
+library(caTools)
+set.seed(1)
+split <- sample.split(universal_m.df, SplitRatio = 0.6)
+training_set <- subset(universal_m.df, split == TRUE)
+validation_set <- subset(universal_m.df, split == FALSE)
+
+
+print(paste("The training set size is:", nrow(training_set)))
+print(paste("The validation set size is:", nrow(validation_set)))
 ```
+
+Normalize the data
+```{r}
+train.norm.df <- train.df[,-10] 
+valid.norm.df <- valid.df[,-10]
+
+norm.values <- preProcess(train.df[, -10], method=c("center", "scale"))
+train.norm.df <- predict(norm.values, train.df[, -10])
+valid.norm.df <- predict(norm.values, valid.df[, -10])
+```
+
+Consider the following customer:
+
+1. Age = 40, Experience = 10, Income = 84, Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0, Mortgage = 0, Securities Account = 0, CD Account = 0, Online = 1, and Credit Card = 1. Perform a k-NN classification with all predictors except ID and ZIP code using k = 1. Remember to transform categorical predictors with more than two categories into dummy variables first. Specify the success class as 1 (loan acceptance), and use the default cutoff value of 0.5. How would this customer be classified?
 
 ```{r}
-#Question 5
 
-#Use the quantities computed above to compute the naive Bayes probability P(Loan = 1 | CC= 1, Online = 1).
+new_customer <- data.frame(
+  Age = 40,
+  Experience = 10,
+  Income = 84,
+  Family = 2,
+  CCAvg = 2,
+  Education.1 = 0,
+  Education.2 = 1,
+  Education.3 = 0,
+  Mortgage = 0,
+  Securities.Account = 0,
+  CD.Account = 0,
+  Online = 1,
+  CreditCard = 1
+)
 
+new.cust.norm <- new_customer
+new.cust.norm <- predict(norm.values, new.cust.norm)
 
-Task5Probablity <- (Probablity1*Probablity2*Probablity3)/
-  ((Probablity1*Probablity2*Probablity3) +(Probablity4*Probablity5*Probablity6))
-
-Task5Probablity 
 ```
+
+Predict using knn
+```{r}
+
+knn.pred1 <- class::knn(train = train.norm.df, 
+                       test = new.cust.norm, 
+                       cl = train.df$Personal.Loan, k = 1)
+knn.pred1
+
+```
+
+
+
+2nd. What is a choice of k that balances between overfitting and ignoring the predictor
+information?
 
 ```{r}
-#Question 6
 
-#Compare this value with the one obtained from the pivot table in (B). Which is a more
-#accurate estimate?
 
-#Answer:
-  
-# Value we got from question 2 was 0.1096654 and in the question 5  is 0.1087106 are almost same.The only differencebetween by the exact method and naive bayes method is the exact method would need the exact same independent variable classification to predict, whereas the naive bayes method does not. We can confirm that the value get from the question 2 is more accurate since we have taken the exact values from the pivot table.
+accuracy.df <- data.frame(k = seq(1, 15, 1), overallaccuracy = rep(0, 15))
+for(i in 1:15) {
+  knn.pred <- class::knn(train = train.norm.df, 
+                         test = valid.norm.df, 
+                         cl = train.df$Personal.Loan, k = i)
+  accuracy.df[i, 2] <- confusionMatrix(knn.pred, 
+                                       as.factor(valid.df$Personal.Loan),positive = "1")$overall[1]
+}
 
-#Question 7
+which(accuracy.df[,2] == max(accuracy.df[,2])) 
 
-#Which of the entries in this table are needed for computing P(Loan = 1 | CC = 1, Online = 1)? Run naive Bayes on the data. Examine the model output on training data, and find the entry that corresponds to P(Loan = 1 | CC = 1, Online = 1). Compare this to the number you obtained in (E).
-
-nb.model <- naiveBayes(Personal.Loan~ Online + CreditCard, data = train.df)
-To_Predict=data.frame(Online=1, CreditCard= 1)
-predict(nb.model, To_Predict,type = 'raw')
-
-# The value we got from question 7  is 0.08463445 and value derived from the task 5 is 0.1087106.
-# The result is almost same that we got from Task5.
-# There is only a minute difference because of the rounding.
-# The difference will not effect the rank order of the output.
+plot(accuracy.df$k,accuracy.df$overallaccuracy)
 
 ```
+
+3. Show the confusion matrix for the validation data that results from using the best k.
+
+
+```{r}
+k<-3
+knn.pred <- class::knn(train = train.norm.df, 
+                       test = valid.norm.df, 
+                       cl = train.df$Personal.Loan, k = 3)
+Conf_matrix <- confusionMatrix(knn.pred,
+               as.factor(valid.df$Personal.Loan),positive="1")
+print(Conf_matrix)
+
+```
+
+
+4. Consider the following customer: Age = 40, Experience = 10, Income = 84,
+Family = 2, CCAvg = 2, Education_1 = 0, Education_2 = 1, Education_3 = 0,
+Mortgage = 0, Securities Account = 0, CD Account = 0, Online = 1 and Credit
+Card = 1. Classify the customer using the best k.
+
+
+```{r,error=TRUE}
+customertest = data.frame(Age = as.integer(40), 
+                          Experience = as.integer(10),
+                          Income = as.integer(84), 
+                          Family = as.integer(2), 
+                          CCAvg = as.integer(2), 
+                          Education1 = as.integer(0), 
+                          Education2 = as.integer(1), 
+                          Education3 = as.integer(0),
+                          Mortgage = as.integer(0), 
+                          Securities.Account = as.integer(0),
+                          CD.Account = as.integer(0),
+                          Online = as.integer(1), 
+                          CreditCard = as.integer(1))
+
+
+new.cust.norm <- new_customer
+new.cust.norm <- predict(norm.values,new.cust.norm)
+
+k<-3
+  knn.pred <- class::knn(train = train.norm.df,
+                       test = new.cust.norm,
+                       cl=train.df$Personal.Loan,k=3)
+knn.pred
+
+```
+
+
+5) Repartition the data, this time into training, validation, and test sets (50% : 30% : 20%). Apply the k-NN method with the k chosen above. Compare the confusion matrix of the test set with that of the training and validation sets. Comment on the differences and their reason.
+
+
+
+```{r}
+set.seed(2)
+train.index <- sample(row.names(universal_m.df),0.5*dim(universal_m.df)[1])
+valid.index <- sample(setdiff(row.names(universal_m.df),train.index),
+                      0.3*dim(universal_m.df)[1])
+test.index <- setdiff(row.names(universal_m.df),c(train.index,valid.index))
+train.df   <- universal_m.df[train.index,]
+valid.df   <- universal_m.df[valid.index,]
+test.df    <- universal_m.df[test.index,]
+```
+
+
+Normalize the data
+
+```{r}
+train.norm.df <- train.df[,-10] 
+valid.norm.df <- valid.df[,-10]
+
+norm.values   <- preProcess(train.df[, -10], method=c("center", "scale"))
+train.norm.df <- predict(norm.values, train.df[, -10])
+valid.norm.df <- predict(norm.values, valid.df[, -10])
+test.norm.df  <- predict(norm.values, test.df[, -10])
+
+```
+
+
+
+```{r}
+
+k<-3
+
+knn.pred <- class::knn(train = train.norm.df, 
+                       test = valid.norm.df, 
+                       cl = train.df$Personal.Loan, k = 3)
+Conf_matrix <- confusionMatrix(knn.pred,
+               as.factor(valid.df$Personal.Loan),positive="1")
+print(Conf_matrix)
+
+```
+
+
+```{r}
+k<-3
+
+knn.pred <- class::knn(train = train.norm.df, 
+                       test = test.norm.df, 
+                       cl = train.df$Personal.Loan, k = 3)
+Conf_matrix <- confusionMatrix(knn.pred,
+               as.factor(test.df$Personal.Loan),positive="1")
+print(Conf_matrix)
+
+```
+
+
+```{r}
+k<-3
+
+knn.pred <- class::knn(train = train.norm.df, 
+                       test = train.norm.df, 
+                       cl = train.df$Personal.Loan, k = 3)
+Conf_matrix <- confusionMatrix(knn.pred,
+               as.factor(train.df$Personal.Loan),positive="1")
+print(Conf_matrix)
+
+
+```
+
+
+
+Accuracy: Test has a lower accuracy (0.968) than Train (0.9736).
+Reason: As a result of variations in the evaluation datasets. Train might have a dataset that is easier to predict or more balanced.
+
+Sensitivity (True Positive Rate): Test (0.6216) is less sensitive than Train (0.7550).
+
+Reason: This suggests that Train's model performs better in accurately detecting positive cases, such as loan approvals. It might have a reduced rate of false negatives.
+
+Specificity (True Negative Rate): Train is more specific than Test (0.9957), with a higher specificity of 0.9978.
+
+Reason: This implies that Train's model is more adept at accurately recognizing cases that are negative (like loan rejections). It might have a reduced rate of false positives.
+
+Positive Predictive Value (Precision): In comparison to Test (0.9200), Train has a higher positive predictive value (0.9741).
+
+Reason: There are fewer false positive predictions as a result of Train's model's increased accuracy in predicting positive cases.
+
+# Validation vs Training
+
+Accuracy: The accuracy of the train is still higher (0.9736) than that of the validation (0.958).
+
+Reason: Train might have a more evenly distributed or predictably large dataset, similar to the Test comparison.
+
+Sensitivity (True Positive Rate): Train is more sensitive than Validation (0.625), at 0.7589.
+
+Reason: The accuracy of Train's model in identifying positive cases is higher. This suggests that the false negative rate in Validation's model might be higher.
+
+Specificity (True Negative Rate): Train is more specific than Validation (0.9934), with a score of 0.9987.
+
+Reason: Train's model has a higher accuracy rate in recognizing negative cases. The model used for validation might have a marginally higher false positive rate.
+
+Positive Predictive Value (Precision): In comparison to Validation (0.9091), Train maintains a higher positive predictive value (0.9827).
+
+Reason: There are fewer false positive predictions as a result of Train's model's increased accuracy in predicting positive cases.
+
+#Possible Causes of Variations
+
+Data set Variations Performance of the model can be strongly impacted by differences in the distribution and makeup of the data across various sets. For example, a more unbalanced data set could make it more difficult to predict uncommon events.
+
+Model Fluctuation Performance differences may arise from different model configurations or from the arbitrary initialization of model parameters.
+
+Adjusting Hyperparameters Model performance can be impacted by various hyper parameter settings, such as the selection of k in k-NN or other model-specific parameters.
+
+Data decoupling There may be differences in the results, particularly for small data sets, if the data sets are divided into training, confirmation, and test sets for each evaluation.
+
+Sample Inconsistency Performance criteria in small data sets may be impacted by differences in the particular samples that are part of the test and confirmation sets.
+
+Allegriness Certain models, like neural networks, use randomness in their optimization process, which results in minute variations.
+
+
+
+
+

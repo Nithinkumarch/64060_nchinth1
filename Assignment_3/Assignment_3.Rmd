@@ -1,0 +1,115 @@
+---
+title: FML_Assignment_3
+author: Chinthakindi Nithin Kumar
+date: 11-05-2023
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+```{r setup}
+
+UniversalBank <- read.csv("/Users/nithinkumarch/Downloads/UniversalBank-1.csv")
+summary(UniversalBank)
+library(caret)
+library(ISLR)
+library(e1071)
+library(dplyr)
+library(class)
+library(reshape2)
+library(ggplot2)
+library(gmodels)
+library(lattice)
+```
+
+```{r}
+UniversalBank$Personal.Loan <- factor(UniversalBank$Personal.Loan)
+UniversalBank$Online <- factor(UniversalBank$Online)
+UniversalBank$CreditCard <- factor(UniversalBank$CreditCard)
+df= UniversalBank
+```
+
+```{r}
+#1
+
+set.seed(64060)
+Train_index <- createDataPartition(df$Personal.Loan, p = 0.6, list = FALSE)
+train.df = df[Train_index,]
+validation.df = df[-Train_index,]
+
+mytable <- xtabs(~ CreditCard + Online + Personal.Loan , data = train.df)
+ftable(mytable)
+
+```
+```{r}
+#2
+
+
+probability = 59/(59+479)
+probability
+
+```
+```{r}
+#3
+
+table(Personal.Loan = train.df$Personal.Loan, Online = train.df$Online)
+
+table(Personal.Loan = train.df$Personal.Loan, CreditCard = train.df$CreditCard)
+table(Personal.Loan = train.df$Personal.Loan)
+```
+
+```{r}
+#4
+
+#i
+Probablity1 <- 93/(93+195)
+Probablity1
+
+#ii 
+Probablity2 <- 179/(179+109)
+Probablity2
+
+#iii
+Probablity3 <- 288/(288+2712)
+Probablity3
+#iv
+Probablity4 <- 788/(788+1924)
+Probablity4
+
+#v
+Probablity5 <- 1631/(1631+1081)
+Probablity5
+
+#vi
+Probablity6 <- 2712/(2712+288)
+Probablity6
+```
+
+```{r}
+#5
+
+Task5Probablity <- (Probablity1*Probablity2*Probablity3)/
+  ((Probablity1*Probablity2*Probablity3) +(Probablity4*Probablity5*Probablity6))
+
+Task5Probablity 
+```
+
+```{r}
+#6
+  
+
+#The values we obtained from questions 2 and 5 are nearly identical at 0.1096654 and 0.1087106, respectively.The naive bayes method does not require the exact same independent variable classification for prediction, while the exact method does. This is the only distinction between the two methods. Since we have taken exact values from the pivot table, we can confirm that the value obtained from question 2 is more accurate.
+
+#7
+
+nb.model <- naiveBayes(Personal.Loan~ Online + CreditCard, data = train.df)
+To_Predict=data.frame(Online=1, CreditCard= 1)
+predict(nb.model, To_Predict,type = 'raw')
+
+#The value obtained from task 5 is 0.1087106, and the value obtained from question 7 is 0.08463445.
+#The outcome nearly matches what we obtained from Task 5.
+#The rounding results in a very slight difference.
+#The rank order of the output will remain unaffected by the difference.
+
+```

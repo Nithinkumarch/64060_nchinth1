@@ -1,0 +1,91 @@
+---
+title: "Assignment_4"
+author: "Nithin Kumar Chinthakindi"
+date: '`r Sys.Date()`'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+
+
+```{r}
+library(tidyverse)  
+library(factoextra)  
+library(dplyr)
+library(ggplot2)
+library(cluster)
+```
+
+```{r}
+
+Pharmaceuticals <- read.csv("/Users/nithinkumarch/Downloads/Pharmaceuticals.csv")
+
+```
+
+```{r}
+# Task 1: Cluster the 21 firms using only the numerical variables (1 to 9).
+# Eliminate missing data and rescale variables for comparability before clustering the data.
+
+Pharma_data <- na.omit(Pharmaceuticals)
+Pharma_data
+```
+
+```{r}
+# Clustering the 21 enterprises using the quantitative variables (1–9)
+row.names(Pharma_data) <- Pharma_data[, 1]
+Pharma_data1 <- Pharma_data[, 3:11]  # Considering only numerical values (columns 3-11)
+```
+
+```{r}
+# Applying the scale method to normalize the data frame
+Pharma_data2 <- scale(Pharma_data1)
+```
+
+
+```{r}
+# Use the Elbow Method to calculate the number of clusters.
+fviz_nbclust(Pharma_data2, kmeans, method = "wss")
+```
+
+```{r}
+# Use the Silhouette method to calculate the number of clusters.
+fviz_nbclust(Pharma_data2, kmeans, method = "silhouette")
+```
+
+```{r}
+# Using k=5 and K-means
+set.seed(64060)
+k_5 <- kmeans(Pharma_data2, centers = 5, nstart = 25)
+```
+
+```{r}
+# Putting the clusters to paper
+fviz_cluster(k_5, data = Pharma_data2)
+```
+
+```{r}
+# Task 2: Analyze the clusters in relation to the numerical variables that were utilized to create them.
+# By taking note of each cluster's mean values for all quantitative variables #... (Cluster interpretation comments)
+
+# Task 3: In relation to the numerical variables (10 to 12), are there any patterns in the clusters?
+# (those not utilized in cluster formation)
+
+#Note: It appears that the code provided lacks any analysis pertaining to variables 10 through 12.
+
+# Task 4: Using any or all of the variables in the dataset, give each cluster a suitable name.
+#... (Comments on Cluster Naming)
+
+# Viewing the cluster plot
+clusplot(Pharma_data2, k_5$cluster, color = TRUE, shade = TRUE, labels = 2, lines = 0)
+
+
+
+```
+
+
+
+
+
+
+
